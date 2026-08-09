@@ -1,0 +1,15 @@
+category_id,category_name,subcategory,sla_hours
+1,Network,VPN,4
+2,Network,DNS,3
+3,Platform,Compute,6
+4,Platform,Database,8
+5,Application,Login,4
+6,Application,Checkout,3
+7,Application,API,5
+8,Security,SSO,4
+9,Security,Access Review,12
+10,Billing,Invoice,24
+11,Billing,Payments,8
+12,Integrations,Webhook,8
+13,Integrations,CRM Sync,10
+14,Observability,Alerts,6

@@ -1,0 +1,14 @@
+{
+  "rows_in":15045,
+  "rows_out":15000,
+  "duplicate_ticket_ids":45,
+  "invalid_timestamps":0,
+  "negative_resolution_times":30,
+  "invalid_priorities":0,
+  "invalid_statuses":0,
+  "missing_root_causes":1223,
+  "actions":[
+    "Dropped duplicate ticket_id rows, keeping first occurrence.",
+    "Cleared invalid resolved_at values and reopened affected tickets."
+  ]
+}

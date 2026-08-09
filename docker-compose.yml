@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: support-ticket-analytics-postgres
+    environment:
+      POSTGRES_DB: support_analytics
+      POSTGRES_USER: support
+      POSTGRES_PASSWORD: change-me
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
+      - ./database/indexes.sql:/docker-entrypoint-initdb.d/002_indexes.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U support -d support_analytics"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:
+
