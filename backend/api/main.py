@@ -68,6 +68,7 @@ def init_database(rows: int = 15000) -> dict[str, str]:
     try:
         from pathlib import Path
         from sqlalchemy import text
+        from backend.python.db import get_engine
         
         # Create schema
         root = Path(__file__).resolve().parents[2]
