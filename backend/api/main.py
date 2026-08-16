@@ -26,7 +26,8 @@ from backend.python.analysis import (
 )
 from backend.python.anomaly_detection import detect_anomalies
 from backend.python.daily_summary import generate_summary
-from backend.python.db import healthcheck
+from backend.python.db import healthcheck, execute_sql_file
+from pathlib import Path
 
 app = FastAPI(
     title="Support Ticket Analytics API",
@@ -55,6 +56,51 @@ app.add_middleware(
 @app.get("/health")
 def health() -> dict[str, str]:
     return healthcheck()
+
+
+@app.post("/api/init-database")
+def init_database(rows: int = 15000) -> dict[str, str]:
+    """
+    Initialize the database with schema and sample data.
+    This endpoint can be called after deployment to set up the database.
+    Only works if tables don't already exist.
+    """
+    try:
+        import sys
+        root = Path(__file__).resolve().parents[2]
+        sys.path.insert(0, str(root))
+        
+        from scripts.generate_data import generate_tickets, write_csv
+        from backend.python.db import get_engine
+        from backend.python.data_cleaning import clean_tickets
+        from sqlalchemy import text
+        
+        # Initialize schema
+        schema_path = root / "database" / "schema.sql"
+        indexes_path = root / "database" / "indexes.sql"
+        
+        execute_sql_file(schema_path)
+        execute_sql_file(indexes_path)
+        
+        # Generate data
+        agents, categories, tickets = generate_tickets(rows)
+        cleaned, report = clean_tickets(tickets, set(categories["category_id"]), set(agents["agent_id"]))
+        cleaned = cleaned.replace({pd.NaT: None, "": None})
+        
+        engine = get_engine()
+        with engine.begin() as conn:
+            conn.execute(text("TRUNCATE tickets, agents, categories RESTART IDENTITY CASCADE"))
+        
+        agents.to_sql("agents", engine, if_exists="append", index=False, method="multi", chunksize=1000)
+        categories.to_sql("categories", engine, if_exists="append", index=False, method="multi", chunksize=1000)
+        cleaned.to_sql("tickets", engine, if_exists="append", index=False, method="multi", chunksize=1000)
+        
+        return {
+            "status": "success",
+            "message": f"Database initialized with {len(cleaned):,} tickets, {len(agents)} agents, and {len(categories)} categories"
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Database initialization failed: {str(exc)}") from exc
 
 
 @app.get("/api/overview")

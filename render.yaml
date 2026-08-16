@@ -6,7 +6,6 @@ services:
     buildCommand: pip install -r backend/requirements.txt
     startCommand: uvicorn backend.api.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
-    initialDeployHook: python scripts/generate_data.py --rows 15000
     envVars:
       - key: DATABASE_URL
         fromDatabase:
