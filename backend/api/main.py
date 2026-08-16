@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
+import os
 from typing import Any
 
 import numpy as np
@@ -33,9 +34,18 @@ app = FastAPI(
     version="1.0.0",
 )
 
+
+def _cors_origins() -> list[str]:
+    defaults = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    configured = os.getenv("BACKEND_CORS_ORIGINS", "")
+    origins = [origin.strip() for origin in configured.split(",") if origin.strip()]
+    return [*defaults, *origins]
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=_cors_origins(),
+    allow_origin_regex=os.getenv("BACKEND_CORS_ORIGIN_REGEX"),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -231,4 +241,3 @@ def _normalize(value: Any) -> Any:
     if pd.isna(value):
         return None
     return value
-

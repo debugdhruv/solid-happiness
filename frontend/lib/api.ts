@@ -16,7 +16,13 @@ import type {
   TrendPoint
 } from "@/types/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? (
+  process.env.NODE_ENV === "production" ? "" : "http://localhost:8000"
+);
+
+if (!API_URL) {
+  throw new Error("NEXT_PUBLIC_API_URL must be set for production deployments.");
+}
 
 export type DateRange = {
   startDate?: string;

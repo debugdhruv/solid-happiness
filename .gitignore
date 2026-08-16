@@ -73,3 +73,5 @@ __pycache__/
 # Local environment
 .env
 .env.*
+!.env.example
+!**/.env.example

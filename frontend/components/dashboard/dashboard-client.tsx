@@ -7,7 +7,6 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
-  BarChart3,
   CalendarDays,
   CheckCircle2,
   Clock3,
@@ -16,8 +15,7 @@ import {
   RefreshCcw,
   Search,
   ShieldAlert,
-  TicketCheck,
-  Users
+  TicketCheck
 } from "lucide-react";
 import {
   Area,
@@ -28,7 +26,6 @@ import {
   Cell,
   Legend,
   Line,
-  LineChart,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -652,4 +649,3 @@ function formatDateTime(value?: string | null) {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
 }
-
