@@ -75,8 +75,9 @@ def init_database(rows: int = 15000) -> dict[str, str]:
         schema_path = root / "database" / "schema.sql"
         indexes_path = root / "database" / "indexes.sql"
         
-        # Read and execute schema files
         engine = get_engine()
+        
+        # Read and execute schema files
         with engine.begin() as conn:
             schema_sql = schema_path.read_text(encoding="utf-8")
             indexes_sql = indexes_path.read_text(encoding="utf-8")
@@ -101,16 +102,29 @@ def init_database(rows: int = 15000) -> dict[str, str]:
         cleaned, report = clean_tickets(tickets, set(categories["category_id"]), set(agents["agent_id"]))
         cleaned = cleaned.replace({pd.NaT: None, "": None})
         
+        # Truncate existing data
         with engine.begin() as conn:
-            conn.execute(text("TRUNCATE tickets, agents, categories RESTART IDENTITY CASCADE"))
+            conn.execute(text("TRUNCATE tickets CASCADE"))
+            conn.execute(text("TRUNCATE categories CASCADE"))
+            conn.execute(text("TRUNCATE agents CASCADE"))
         
+        # Insert data in correct order (respecting foreign keys)
         agents.to_sql("agents", engine, if_exists="append", index=False, method="multi", chunksize=1000)
         categories.to_sql("categories", engine, if_exists="append", index=False, method="multi", chunksize=1000)
         cleaned.to_sql("tickets", engine, if_exists="append", index=False, method="multi", chunksize=1000)
         
+        # Verify data was inserted
+        with engine.connect() as conn:
+            agents_count = conn.execute(text("SELECT COUNT(*) FROM agents")).scalar()
+            categories_count = conn.execute(text("SELECT COUNT(*) FROM categories")).scalar()
+            tickets_count = conn.execute(text("SELECT COUNT(*) FROM tickets")).scalar()
+        
+        if tickets_count == 0:
+            raise Exception("Data insertion failed - no tickets found after insert!")
+        
         return {
             "status": "success",
-            "message": f"✅ Database initialized! Created schema with {len(cleaned):,} tickets, {len(agents)} agents, and {len(categories)} categories"
+            "message": f"✅ Database initialized! Loaded {tickets_count:,} tickets, {agents_count} agents, and {categories_count} categories"
         }
     except Exception as exc:
         import traceback
