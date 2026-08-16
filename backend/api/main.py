@@ -66,28 +66,40 @@ def init_database(rows: int = 15000) -> dict[str, str]:
     Can be accessed from browser: https://your-backend.onrender.com/api/init-database?rows=15000
     """
     try:
-        import sys
-        root = Path(__file__).resolve().parents[2]
-        sys.path.insert(0, str(root))
-        
-        from scripts.generate_data import generate_tickets, write_csv
-        from backend.python.db import get_engine
-        from backend.python.data_cleaning import clean_tickets
+        from pathlib import Path
         from sqlalchemy import text
         
-        # Initialize schema
+        # Create schema
+        root = Path(__file__).resolve().parents[2]
         schema_path = root / "database" / "schema.sql"
         indexes_path = root / "database" / "indexes.sql"
         
-        execute_sql_file(schema_path)
-        execute_sql_file(indexes_path)
+        # Read and execute schema files
+        engine = get_engine()
+        with engine.begin() as conn:
+            schema_sql = schema_path.read_text(encoding="utf-8")
+            indexes_sql = indexes_path.read_text(encoding="utf-8")
+            
+            # Execute schema statements
+            for statement in schema_sql.split(";"):
+                statement = statement.strip()
+                if statement:
+                    conn.execute(text(statement))
+            
+            # Execute index statements
+            for statement in indexes_sql.split(";"):
+                statement = statement.strip()
+                if statement:
+                    conn.execute(text(statement))
         
-        # Generate data
+        # Generate and load sample data
+        from scripts.generate_data import generate_tickets
+        from backend.python.data_cleaning import clean_tickets
+        
         agents, categories, tickets = generate_tickets(rows)
         cleaned, report = clean_tickets(tickets, set(categories["category_id"]), set(agents["agent_id"]))
         cleaned = cleaned.replace({pd.NaT: None, "": None})
         
-        engine = get_engine()
         with engine.begin() as conn:
             conn.execute(text("TRUNCATE tickets, agents, categories RESTART IDENTITY CASCADE"))
         
@@ -97,10 +109,12 @@ def init_database(rows: int = 15000) -> dict[str, str]:
         
         return {
             "status": "success",
-            "message": f"Database initialized with {len(cleaned):,} tickets, {len(agents)} agents, and {len(categories)} categories"
+            "message": f"✅ Database initialized! Created schema with {len(cleaned):,} tickets, {len(agents)} agents, and {len(categories)} categories"
         }
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Database initialization failed: {str(exc)}") from exc
+        import traceback
+        error_detail = f"{type(exc).__name__}: {str(exc)}\n{traceback.format_exc()}"
+        raise HTTPException(status_code=500, detail=error_detail) from exc
 
 
 @app.get("/api/overview")
