@@ -58,12 +58,12 @@ def health() -> dict[str, str]:
     return healthcheck()
 
 
-@app.post("/api/init-database")
+@app.get("/api/init-database")
 def init_database(rows: int = 15000) -> dict[str, str]:
     """
     Initialize the database with schema and sample data.
     This endpoint can be called after deployment to set up the database.
-    Only works if tables don't already exist.
+    Can be accessed from browser: https://your-backend.onrender.com/api/init-database?rows=15000
     """
     try:
         import sys
